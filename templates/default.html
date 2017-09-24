@@ -41,28 +41,12 @@
         <table class="table table-hover">
             <tbody>
                 <tr>
-                    <td>Departure</td>
-                    <td><code class="trip-departure"></code></td>
+                    <td>Update</td>
+                    <td><code class="trip-updated"></code></td>
                 </tr>
                 <tr>
                     <td>Current Speed</td>
                     <td><code class="trip-now-speed"></code></td>
-                </tr>
-                <tr>
-                    <td>Trip Time</td>
-                    <td><code class="trip-time"></code></td>
-                </tr>
-                <tr>
-                    <td>Trip Distance</td>
-                    <td><code class="trip-distance"></code></td>
-                </tr>
-                <tr>
-                    <td>Average Speed</td>
-                    <td><code class="trip-avg-speed"></code></td>
-                </tr>
-                <tr>
-                    <td>Max Speed</td>
-                    <td><code class="trip-max-speed"></code></td>
                 </tr>
             </tbody>
         </table>
@@ -74,68 +58,46 @@
     </div>
 
     <script>
+    var map = null;
+    var marker = null;
+
     function tracker(data) {
-        var bounds = new google.maps.LatLngBounds();
-        var map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 13,
+        var trip = live(data);
+
+        if(marker)
+            marker.setMap(null);
+
+        marker = new google.maps.Marker({
+            position: trip['coord'],
+            map: map,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 5
+              },
+            title: 'Current position'
+        });
+
+        var speed = trip['speed'].toFixed(2)
+        var speedtext = speed + ' km/h';
+
+        $('.trip-updated').html(trip['update']);
+        $('.trip-now-speed').html(speedtext);
+
+        map.setCenter(trip['coord']);
+    }
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 16,
             center: {lat: 50.66, lng: 5.574},
             mapTypeId: 'terrain'
         });
 
-        var trip = compute(data);
-
-        for(var entry in trip['segments']) {
-            var segment = trip['segments'][entry];
-
-            // extends map bounds
-            bounds.extend(segment[0]);
-
-            // compute color of the segment
-            var speedpc = ((trip['speeds'][entry] / 90) * 100);
-            if(speedpc > 100)
-                speedpc = 100;
-
-            var temp = (100 - speedpc) / 100;
-            var color = (temp * 180).toFixed(0);
-
-            // create the segment
-            var segmentPath = new google.maps.Polyline({
-                path: segment,
-                geodesic: true,
-                strokeColor: 'hsl(' + color + ', 100%, 40%)',
-                strokeOpacity: 1.0,
-                strokeWeight: 4
-            });
-
-            segmentPath.setMap(map);
-        }
-
-        map.fitBounds(bounds);
-
-        // fill in table
-        var triptime = trip['totaltime'] + ' seconds';
-        if(trip['totaltime'] > 120)
-            triptime = (trip['totaltime'] / 60).toFixed(2) + ' minutes';
-
-        var triplength = (trip['length'].toFixed(0)) + ' meters';
-        if(trip['length'] > 1200)
-            triplength = ((trip['length'] / 1000).toFixed(2)) + ' km';
-
-        var avgauto = trip['speedavg'].toFixed(2)
-        var avgautotext = avgauto + ' km/h';
-
-        var avgtime = ((trip['length'] / trip['totaltime']) * 3.6).toFixed(2);
-        var avgtimetext = avgtime + ' km/h';
-
-        $('.trip-departure').html(trip['departure']);
-        $('.trip-arrival').html(trip['arrival']);
-        $('.trip-time').html(triptime);
-        $('.trip-distance').html(triplength);
-        $('.trip-avg-speed').html(avgautotext + ' [' + avgtimetext + ']');
-        $('.trip-max-speed').html(trip['speedmax'].toFixed(2) + ' km/h');
+        update();
+        setInterval(update, 1000);
     }
 
-    function initMap() {
+    function update() {
         $.get('/api/now', tracker);
     }
     </script>

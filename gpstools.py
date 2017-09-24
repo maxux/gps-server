@@ -105,6 +105,10 @@ class GPSData:
         self.raw = GPSRawData()
 
     def parse(self, line):
+        # malformed line (no checksum at the end)
+        if line[-3:-2] != "*":
+            return {'type': 'unknown'}
+
         fields = line.split(',')
         action = fields[0]
         # print(fields)
