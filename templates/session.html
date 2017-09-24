@@ -24,10 +24,10 @@
 
       <div class="collapse navbar-collapse" id="navbars-real">
         <ul class="navbar-nav mr-auto">
-          <li class="nav-item active">
+          <li class="nav-item">
             <a class="nav-link" href="/">Live</a>
           </li>
-          <li class="nav-item">
+          <li class="nav-item active">
             <a class="nav-link" href="/sessions">Sessions</a>
           </li>
         </ul>
@@ -37,7 +37,7 @@
     <!-- Main jumbotron for a primary marketing message or call to action -->
     <div class="jumbotron home-jumbotron">
       <div class="container">
-        <h1 class="display-4">Live session</h1>
+        <h1 class="display-4 session-name">Session #{{ SESSION_ID }}</h1>
         <table class="table table-hover">
             <tbody>
                 <tr>
@@ -45,8 +45,8 @@
                     <td><code class="trip-departure"></code></td>
                 </tr>
                 <tr>
-                    <td>Current Speed</td>
-                    <td><code class="trip-now-speed"></code></td>
+                    <td>Arrival</td>
+                    <td><code class="trip-arrival"></code></td>
                 </tr>
                 <tr>
                     <td>Trip Time</td>
@@ -136,7 +136,7 @@
     }
 
     function initMap() {
-        $.get('/api/now', tracker);
+        $.get('/api/session/{{ SESSION_ID }}', tracker);
     }
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTNer6Sa2Q1pQv6scaledQYBArRkEq2wQ&callback=initMap&libraries=geometry"></script>

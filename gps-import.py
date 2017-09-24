@@ -1,6 +1,30 @@
 from gpstools import *
+import sqlite3
 
 if __name__ == '__main__':
+    with open("trips/trip-4.json", "r") as f:
+        raw = f.read()
+
+    db = sqlite3.connect('db/gps.sqlite3')
+
+    data = json.loads(raw)
+    cursor = db.cursor()
+
+    index = 0
+    for datapoint in data:
+        index += 1
+
+        if index == 1:
+            continue
+
+        rows = (datapoint['datetime'], json.dumps(datapoint))
+        cursor.execute("INSERT INTO datapoints (timepoint, payload) VALUES (?, ?)", rows)
+
+    db.commit()
+
+
+
+    """
     with open("/tmp/gps-data-new", "r") as f:
         raw = f.read()
 
@@ -35,7 +59,7 @@ if __name__ == '__main__':
 
             last_rmc = data
 
-        if index < 5500:
+        if index < 25200:
             index += 1
             continue
 
@@ -60,7 +84,8 @@ if __name__ == '__main__':
 
         index += 1
 
-        if index > 11800:
+        if index > 31000:
             break
 
     print(json.dumps(logs))
+    """

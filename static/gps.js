@@ -44,7 +44,7 @@ function compute(data) {
     output['length'] = google.maps.geometry.spherical.computeLength(fullpolypath.getPath().getArray());
     output['speedavg'] = output['speedavg'] / output['speeds'].length;
 
-    console.log(output);
+    // console.log(output);
 
     return output;
 }
