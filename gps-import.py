@@ -13,6 +13,8 @@ if __name__ == '__main__':
     last_vtg = None
     last_rmc = None
 
+    index = 0
+
     for line in lines:
         data = gps.parse(line)
         if data['type'] == 'gga':
@@ -28,20 +30,37 @@ if __name__ == '__main__':
             last_vtg = data
 
         if data['type'] == 'rmc':
-            if not data['coord']['lon']:
+            if not data['coord']['lng']:
                 continue
 
             last_rmc = data
 
+        if index < 5500:
+            index += 1
+            continue
+
         if last_gga and last_vtg and last_rmc:
             logs.append({
                 'datetime': '%s %s' % (last_rmc['date'], last_rmc['time']),
-                'coord': last_rmc['coord'],
+                'coord': {
+                    'lat': last_rmc['coord']['lat'],
+                    'lng': last_rmc['coord']['lng'],
+                },
                 'speed': last_vtg['speed'],
                 'quality': last_gga['quality'],
                 'sats': last_gga['sats'],
                 'hdop': last_gga['hdop'],
                 'altitude': last_gga['altitude'],
+                'timestamp': last_rmc['timestamp'],
             })
+
+            last_gga = None
+            last_vtg = None
+            last_rmc = None
+
+        index += 1
+
+        if index > 11800:
+            break
 
     print(json.dumps(logs))

@@ -1,4 +1,7 @@
 import json
+import sys
+from datetime import datetime
+from datetime import timezone
 
 class GPSRawData:
     def _time(self, tf):
@@ -9,13 +12,13 @@ class GPSRawData:
 
     def _dmsdd(self, lat, latcard, lon, loncard):
         if not lat:
-            return {'lat': 0, 'lon': 0}
+            return {'lat': 0, 'lng': 0}
 
-        xlat = {'d': int(lat[0:2]), 'm': int(lat[2:4]), 's': int(lat[5:]) / 100}
-        xlon = {'d': int(lon[0:3]), 'm': int(lon[3:5]), 's': int(lon[6:]) / 100}
+        xlat = {'d': int(lat[0:2]), 'ms': float(lat[2:])}
+        xlon = {'d': int(lon[0:3]), 'ms': float(lon[3:])}
 
-        ddlat = xlat['d'] + (xlat['m'] / 60) + (xlat['s'] / 3600)
-        ddlon = xlon['d'] + (xlon['m'] / 60) + (xlon['s'] / 3600)
+        ddlat = xlat['d'] + (xlat['ms'] / 60)
+        ddlon = xlon['d'] + (xlon['ms'] / 60)
 
         if latcard == 'S':
             ddlat = -ddlat
@@ -23,7 +26,7 @@ class GPSRawData:
         if loncard == 'W':
             ddlon = -ddlon
 
-        return {'lat': ddlat, 'lon': ddlon}
+        return {'lat': ddlat, 'lng': ddlon, 'rlat': lat, 'rlng': lon}
 
     def _quality(self, quality):
         if quality == '0':
@@ -41,9 +44,19 @@ class GPSRawData:
     def gprmc(self, fields):
         time = self._time(fields[1])
         date = self._date(fields[9])
+
+        dt = datetime.strptime('%s %s' % (date, time), '%Y-%m-%d %H:%M:%S')
+        timestamp = dt.replace(tzinfo=timezone.utc).timestamp()
+
         coord = self._dmsdd(fields[3], fields[4], fields[5], fields[6])
 
-        return {'type': 'rmc', 'time': time, 'date': date, 'coord': coord}
+        return {
+            'type': 'rmc',
+            'timestamp': int(timestamp),
+            'time': time,
+            'date': date,
+            'coord': coord
+        }
 
     # GPS Satellites in view
     def gpgsv(self, fields):
@@ -112,49 +125,3 @@ class GPSData:
             return self.raw.gpgga(fields)
 
         return {'type': 'unknown'}
-
-if __name__ == '__main__':
-    with open("/tmp/gps-data-new", "r") as f:
-        raw = f.read()
-
-    lines = raw.replace('[+] >> ', '').strip().split("\n")
-
-    gps = GPSData()
-    logs = []
-
-    last_gga = None
-    last_vtg = None
-    last_rmc = None
-
-    for line in lines:
-        data = gps.parse(line)
-        if data['type'] == 'gga':
-            if not data['sats']:
-                continue
-
-            last_gga = data
-
-        if data['type'] == 'vtg':
-            if not data['track']:
-                continue
-
-            last_vtg = data
-
-        if data['type'] == 'rmc':
-            if not data['coord']['lon']:
-                continue
-
-            last_rmc = data
-
-        if last_gga and last_vtg and last_rmc:
-            logs.append({
-                'datetime': '%s %s' % (last_rmc['date'], last_rmc['time']),
-                'coord': last_rmc['coord'],
-                'speed': last_vtg['speed'],
-                'quality': last_gga['quality'],
-                'sats': last_gga['sats'],
-                'hdop': last_gga['hdop'],
-                'altitude': last_gga['altitude'],
-            })
-
-    print(json.dumps(logs))
