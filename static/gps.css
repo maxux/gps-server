@@ -1,0 +1,23 @@
+html, body, #full {
+    height: 100%;
+}
+
+body {
+    padding-top: 3.5rem;
+}
+
+.home-jumbotron {
+    margin-bottom: 0;
+    padding: 1rem;
+}
+
+.container-map {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#map {
+    width: 100%;
+    height: 550px;
+}

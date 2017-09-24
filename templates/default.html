@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>GPS Realtime Tracking</title>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+    <script src="static/gps.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <link href="static/gps.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+      <a class="navbar-brand" href="#">GPS Tracking</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbars-real" aria-controls="navbars-real" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbars-real">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="#">Live</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Sessions</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron home-jumbotron">
+      <div class="container">
+        <h1 class="display-4">Session</h1>
+        <table class="table table-hover">
+            <tbody>
+                <tr>
+                    <td>Departure</td>
+                    <td><code class="trip-departure"></code></td>
+                </tr>
+                <tr>
+                    <td>Arrival</td>
+                    <td><code class="trip-arrival"></code></td>
+                </tr>
+                <tr>
+                    <td>Trip Time</td>
+                    <td><code class="trip-time"></code></td>
+                </tr>
+                <tr>
+                    <td>Trip Distance</td>
+                    <td><code class="trip-distance"></code></td>
+                </tr>
+                <tr>
+                    <td>Average Speed</td>
+                    <td><code class="trip-avg-speed"></code></td>
+                </tr>
+                <tr>
+                    <td>Max Speed</td>
+                    <td><code class="trip-max-speed"></code></td>
+                </tr>
+            </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="container-fluid container-map">
+        <div id="map"></div>
+    </div>
+
+    <script>
+    function tracker(data) {
+        var map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 13,
+            center: {lat: 50.66, lng: 5.574},
+            mapTypeId: 'terrain'
+        });
+
+        var trip = compute(data);
+
+        for(var entry in trip['segments']) {
+            var segment = trip['segments'][entry];
+
+            var speedpc = ((trip['speeds'][entry] / 90) * 100);
+            if(speedpc > 100)
+                speedpc = 100;
+
+            var temp = (100 - speedpc) / 100;
+            var color = (temp * 180).toFixed(0);
+
+            var segmentPath = new google.maps.Polyline({
+                path: segment,
+                geodesic: true,
+                strokeColor: 'hsl(' + color + ', 100%, 40%)',
+                strokeOpacity: 1.0,
+                strokeWeight: 4
+            });
+
+            segmentPath.setMap(map);
+        }
+
+        // fill in table
+        var triptime = trip['totaltime'] + ' seconds';
+        if(trip['totaltime'] > 120)
+            triptime = (trip['totaltime'] / 60).toFixed(2) + ' minutes';
+
+        var triplength = (trip['length'].toFixed(0)) + ' meters';
+        if(trip['length'] > 1200)
+            triplength = ((trip['length'] / 1000).toFixed(2)) + ' km';
+
+        $('.trip-departure').html(trip['departure']);
+        $('.trip-arrival').html(trip['arrival']);
+        $('.trip-time').html(triptime);
+        $('.trip-distance').html(triplength);
+        $('.trip-avg-speed').html(trip['speedavg'].toFixed(2) + ' km/h');
+        $('.trip-max-speed').html(trip['speedmax'].toFixed(2) + ' km/h');
+    }
+
+    function initMap() {
+        $.get('/data', tracker);
+    }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTNer6Sa2Q1pQv6scaledQYBArRkEq2wQ&callback=initMap&libraries=geometry"></script>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+</body>
+</html>
