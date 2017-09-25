@@ -2,6 +2,14 @@ import asyncio
 import redis
 import websockets
 import json
+import os
+
+# checking if config file exists
+if not os.path.isfile("config/gpsconf.py"):
+    raise Exception("Configuration file not found")
+
+# loading config file
+from config.gpsconf import config
 
 class GPSLive():
     def __init__(self):
@@ -67,7 +75,9 @@ class GPSLive():
         loop.set_debug(True)
 
         print("[+] starting websocket server")
-        websocketd = websockets.serve(self.handler, '0.0.0.0', 5556)
+        addr = config['websocket-listen']
+        port = config['websocket-port']
+        websocketd = websockets.serve(self.handler, addr, port)
         asyncio.ensure_future(websocketd, loop=loop)
 
         print("[+] starting redis fetcher")

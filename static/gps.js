@@ -54,6 +54,10 @@ function live(data) {
 
     output = data;
     output['update'] = new Date(data['timestamp'] * 1000);
+    output['status'] = 'online';
+
+    if(data['timestamp'] + 60 < (Date.now() / 1000))
+        output['status'] = 'offline';
 
     return output;
 }

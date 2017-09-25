@@ -7,7 +7,12 @@ from gpsdata.nmea0183 import *
 from flask import Flask, request, redirect, url_for, render_template, abort, make_response, send_from_directory
 from werkzeug.wrappers import Request
 
-dbfile = 'db/gps.sqlite3'
+# checking if config file exists
+if not os.path.isfile("config/gpsconf.py"):
+    raise Exception("Configuration file not found")
+
+# loading config file
+from config.gpsconf import config
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -68,11 +73,15 @@ def live_update():
     rclient.publish('gps-live', json.dumps(livedata))
 
 def live_commit(db):
-    # saving live data
-    cursor = db.cursor()
-    now = (livedata['datetime'], json.dumps(livedata),)
-    cursor.execute("INSERT INTO datapoints (timepoint, payload) VALUES (?, ?)", now)
-    db.commit()
+    try:
+        # saving live data
+        cursor = db.cursor()
+        now = (livedata['datetime'], json.dumps(livedata),)
+        cursor.execute("INSERT INTO datapoints (timepoint, payload) VALUES (?, ?)", now)
+        db.commit()
+
+    except Exception as e:
+        print(e)
 
 def gps_push(data, db):
     global gpsdata
@@ -92,12 +101,7 @@ def gps_push(data, db):
        gpsdata['vtg'] and gpsdata['vtg']['track'] and \
        gpsdata['rmc'] and gpsdata['rmc']['coord']['lng']:
         print("[+] we have enough valid data, commit")
-
-        try:
-            live_commit(db)
-
-        except Exception as e:
-            print(e)
+        live_commit(db)
 
 def initialize():
     rclient.publish('gps-live', json.dumps(livedata))
@@ -121,7 +125,7 @@ def route_session_id(sessid):
 #
 # api routing
 #
-@app.route('/api/ping')
+@app.route('/api/ping', methods=['GET', 'POST'])
 def route_api_ping():
     return jsonreply(json.dumps({"pong": int(time.time())}))
 
@@ -129,20 +133,30 @@ def route_api_ping():
 def route_api_now():
     return jsonreply(json.dumps(livedata))
 
-@app.route('/api/push/session')
+@app.route('/api/push/session', methods=['GET', 'POST'])
 def route_api_push_session():
-    db = sqlite3.connect(dbfile)
+    if request.headers.get('X-GPS-Auth') != config['password']:
+        abort(401)
 
-    cursor = db.cursor()
-    now = (int(time.time()),)
-    cursor.execute("INSERT INTO sessions (start) VALUES (datetime(?, 'unixepoch'))", now)
-    db.commit()
+    db = sqlite3.connect(config['db-file'])
+
+    try:
+        cursor = db.cursor()
+        now = (int(time.time()),)
+        cursor.execute("INSERT INTO sessions (start) VALUES (datetime(?, 'unixepoch'))", now)
+        db.commit()
+
+    except Exception as e:
+        print(e)
 
     return jsonreply(json.dumps({"status": "success"}))
 
 @app.route('/api/push/datapoint', methods=['POST'])
 def route_api_push_datapoint():
-    db = sqlite3.connect(dbfile)
+    if request.headers.get('X-GPS-Auth') != config['password']:
+        abort(401)
+
+    db = sqlite3.connect(config['db-file'])
     gps = GPSData()
 
     lines = request.data.decode('utf-8').strip().split("\n")
@@ -160,13 +174,15 @@ def route_api_push_datapoint():
             print(e)
 
     db.commit()
-    live_update()
+
+    if gpsdata['gga'] and gpsdata['vtg'] and gpsdata['rmc']:
+        live_update()
 
     return jsonreply(json.dumps({"status": "success"}))
 
 @app.route('/api/sessions')
 def route_api_sessions():
-    db = sqlite3.connect(dbfile)
+    db = sqlite3.connect(config['db-file'])
 
     cursor = db.cursor()
     cursor.execute("SELECT * FROM sessions ORDER BY start DESC")
@@ -180,7 +196,7 @@ def route_api_sessions():
 
 @app.route('/api/session/<sessid>')
 def route_api_session(sessid):
-    db = sqlite3.connect(dbfile)
+    db = sqlite3.connect(config['db-file'])
     cursor = db.cursor()
 
     cursor.execute("SELECT start FROM sessions WHERE id = ? LIMIT 1", (sessid,))
@@ -219,4 +235,4 @@ initialize()
 # serving
 #
 print("[+] listening")
-app.run(host="0.0.0.0", port=5555, debug=True, threaded=True)
+app.run(host=config['http-listen'], port=config['http-port'], debug=config['debug'], threaded=True)

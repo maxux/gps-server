@@ -37,7 +37,7 @@
     <!-- Main jumbotron for a primary marketing message or call to action -->
     <div class="jumbotron home-jumbotron">
       <div class="container">
-        <h1 class="display-4">Live session</h1>
+        <h1 class="display-4 live-title">Live session</h1>
         <table class="table table-hover">
             <tbody>
                 <tr>
@@ -89,6 +89,9 @@
         if(trip['quality'] != "invalid")
             var signal = "Valid (" + trip['quality'] + ", Satellites: " + trip['sats'] + ", HDOP: " + trip['hdop'] + ")";
 
+        if(trip['status'] == 'offline')
+            $('.live-title').html("Tracker offline, last data:");
+
         $('.trip-signal').html(signal);
         $('.trip-updated').html(trip['update']);
         $('.trip-now-speed').html(speedtext);
@@ -97,8 +100,7 @@
     }
 
     function connect() {
-        // socket = new WebSocket("ws://10.241.0.18:5556/");
-        socket = new WebSocket("ws://home.maxux.net:5556/");
+        socket = new WebSocket("ws://live.gps.maxux.net/");
 
         socket.onopen = function() {
             console.log("websocket open");
