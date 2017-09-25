@@ -23,8 +23,11 @@ function triptime(data) {
 function compute(data) {
     var output = {};
     var fullpath = [];
+
     output['segments'] = [];
     output['speeds']   = [];
+    output['elevate']  = [];
+    output['satsview'] = [];
     output['speedavg'] = 0;
     output['speedmax'] = 0;
 
@@ -48,7 +51,11 @@ function compute(data) {
         output['segments'].push([data[idx]['coord'], data[idx + 1]['coord']]);
 
         // computing speed
-        output['speeds'].push(data[idx]['speed']);
+        var time = data[idx]['datetime'].substr(11, 8);
+        output['speeds'].push([time, data[idx]['speed']]);
+        output['elevate'].push([time, data[idx]['altitude']]);
+        output['satsview'].push([time, data[idx]['sats']]);
+
         output['speedavg'] += data[idx]['speed'];
 
         if(data[idx]['speed'] > output['speedmax'])
