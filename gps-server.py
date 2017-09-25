@@ -108,11 +108,23 @@ def gps_push(data, db):
     # commit new values
     if gpsdata['gga'] and gpsdata['gga']['sats'] and \
        gpsdata['vtg'] and gpsdata['vtg']['track'] and \
-       gpsdata['rmc'] and gpsdata['rmc']['coord']['lng']:
+       gpsdata['rmc'] and gpsdata['rmc']['coord']['lng'] and \
+       gpsdata['rmc']['coord']['lat']:
         print("[+] we have enough valid data, commit")
         live_commit(db)
 
 def initialize():
+    global livedata
+
+    # loading last data from database
+    db = sqlite3.connect(config['db-file'])
+
+    cursor = db.cursor()
+    cursor.execute("SELECT payload FROM datapoints ORDER BY timepoint DESC LIMIT 1")
+    dbpoints = cursor.fetchall()
+    if len(dbpoints) == 1:
+        livedata = json.loads(dbpoints[0][0])
+
     rclient.publish('gps-live', json.dumps(livedata))
 
 #
@@ -189,7 +201,8 @@ def route_api_push_datapoint():
 
     db.commit()
 
-    if gpsdata['gga'] and gpsdata['vtg'] and gpsdata['rmc']:
+    if gpsdata['gga'] and gpsdata['vtg'] and gpsdata['rmc'] and \
+       gpsdata['rmc']['coord']['lng'] and gpsdata['rmc']['coord']['lat']:
         live_update()
 
     return jsonreply(json.dumps({"status": "success"}))

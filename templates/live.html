@@ -10,7 +10,7 @@
                     <td><code class="trip-signal"></code></td>
                 </tr>
                 <tr>
-                    <td>Update</td>
+                    <td>Last Update</td>
                     <td><code class="trip-updated"></code></td>
                 </tr>
                 <tr>
@@ -50,8 +50,10 @@
         var speed = trip['speed'].toFixed(2)
         var speedtext = speed + ' km/h';
 
+        console.log(trip);
+
         var signal = "Searching...";
-        if(trip['quality'] != "invalid")
+        if(trip['quality'] == "GPS")
             var signal = "Valid (" + trip['quality'] + ", Satellites: " + trip['sats'] + ", HDOP: " + trip['hdop'] + ")";
 
         var livetitle = 'Live session';
@@ -87,7 +89,7 @@
 
     function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 16,
+            zoom: 15,
             center: {lat: 50.66, lng: 5.574},
             mapTypeId: 'terrain'
         });
