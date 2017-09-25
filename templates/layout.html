@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>GPS Realtime Tracking</title>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+    <script src="/static/gps.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <link href="/static/gps.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+      <a class="navbar-brand" href="#">GPS Tracking</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbars-real" aria-controls="navbars-real" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbars-real">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="/">Live</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/sessions">Sessions</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    {% block content %}
+    {% endblock %}
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron home-jumbotron">
+      <div class="container">
+        <h1 class="display-4 live-title">Live session</h1>
+        <table class="table table-hover">
+            <tbody>
+                <tr>
+                    <td>Signal</td>
+                    <td><code class="trip-signal"></code></td>
+                </tr>
+                <tr>
+                    <td>Update</td>
+                    <td><code class="trip-updated"></code></td>
+                </tr>
+                <tr>
+                    <td>Current Speed</td>
+                    <td><code class="trip-now-speed"></code></td>
+                </tr>
+            </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="container-fluid container-map">
+        <div id="map"></div>
+    </div>
+
+    <script>
+    var map = null;
+    var marker = null;
+    var socket = null;
+
+    function tracker(data) {
+        var trip = live(data);
+
+        if(marker)
+            marker.setMap(null);
+
+        marker = new google.maps.Marker({
+            position: trip['coord'],
+            map: map,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 5
+              },
+            title: 'Current position'
+        });
+
+        var speed = trip['speed'].toFixed(2)
+        var speedtext = speed + ' km/h';
+
+        var signal = "Searching...";
+        if(trip['quality'] != "invalid")
+            var signal = "Valid (" + trip['quality'] + ", Satellites: " + trip['sats'] + ", HDOP: " + trip['hdop'] + ")";
+
+        if(trip['status'] == 'offline')
+            $('.live-title').html("Tracker offline, last data:");
+
+        $('.trip-signal').html(signal);
+        $('.trip-updated').html(trip['update']);
+        $('.trip-now-speed').html(speedtext);
+
+        map.setCenter(trip['coord']);
+    }
+
+    function connect() {
+        socket = new WebSocket("ws://live.gps.maxux.net/");
+
+        socket.onopen = function() {
+            console.log("websocket open");
+        }
+
+        socket.onmessage = function(msg) {
+            json = JSON.parse(msg.data);
+            // console.log(json);
+            tracker(json);
+        }
+
+        socket.onclose = function() {
+            $('#disconnected').show();
+            setTimeout(connect, 2000);
+        }
+    }
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 16,
+            center: {lat: 50.66, lng: 5.574},
+            mapTypeId: 'terrain'
+        });
+
+        connect();
+    }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=XX&callback=initMap&libraries=geometry"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+</body>
+</html>

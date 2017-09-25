@@ -12,6 +12,9 @@ config = {
     # public url for reaching live websocket
     'public-live-url': 'live.gps.domain.tld',
 
+    # google map api key
+    'google-map-key': '',
+
     # http listen port
     'http-port': 5555,
 
