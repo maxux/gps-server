@@ -28,6 +28,15 @@ def jsonreply(contents):
 
     return response
 
+def template(filename, data={}):
+    # building default common variable
+    # and merge custom variable
+    variables = {
+        'GOOGLE_API_KEY': config['google-map-apikey'],
+        **data
+    }
+    return render_template(filename, **variables)
+
 #
 # gps data handling
 #
@@ -111,16 +120,21 @@ def initialize():
 #
 @app.route('/')
 def route_index():
-    return render_template("default.html")
+    data = {'CATEGORY': 'live'}
+    return template("live.html", data)
 
 @app.route('/sessions')
 def route_sessions():
-    return render_template("sessions.html")
+    data = {'CATEGORY': 'sessions'}
+    return template("sessions.html", data)
 
 @app.route('/session/<sessid>')
 def route_session_id(sessid):
-    data = {'SESSION_ID': sessid}
-    return render_template("session.html", **data)
+    data = {
+        'SESSION_ID': sessid,
+        'CATEGORY': 'sessions',
+    }
+    return template("session.html", data)
 
 #
 # api routing
@@ -216,8 +230,6 @@ def route_api_session(sessid):
     maxdate = '9999-01-01 00:00:00'
     if len(dbsession) > 0:
         maxdate = dbsession[0][0]
-
-    print(sessionstart, maxdate)
 
     # fetching time-slice data
     cursor.execute("SELECT payload FROM datapoints WHERE timepoint > ? AND timepoint < ?", (sessionstart, maxdate,))

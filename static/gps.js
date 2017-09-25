@@ -1,3 +1,15 @@
+// prevent roboto to be loaded
+// https://stackoverflow.com/a/25902239/1974533
+var head = document.getElementsByTagName('head')[0];
+var insertBefore = head.insertBefore;
+
+head.insertBefore = function(newElement, referenceElement) {
+    if(newElement.href && newElement.href.indexOf('//fonts.googleapis.com/css?family=Roboto') > -1)
+        return;
+
+    insertBefore.call(head, newElement, referenceElement);
+};
+
 function triptime(data) {
     var departure = data[0]['timestamp'];
     var arrival = data[data.length - 1]['timestamp'];
@@ -5,6 +17,9 @@ function triptime(data) {
     return arrival - departure;
 }
 
+//
+// gps data
+//
 function compute(data) {
     var output = {};
     var fullpath = [];

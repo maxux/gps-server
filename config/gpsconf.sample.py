@@ -13,7 +13,7 @@ config = {
     'public-live-url': 'live.gps.domain.tld',
 
     # google map api key
-    'google-map-key': '',
+    'google-map-apikey': '',
 
     # http listen port
     'http-port': 5555,
