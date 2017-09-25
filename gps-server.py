@@ -2,6 +2,7 @@ import os
 import time
 import json
 import sqlite3
+import redis
 from gpstools import *
 from flask import Flask, request, redirect, url_for, render_template, abort, make_response, send_from_directory
 from werkzeug.wrappers import Request
@@ -10,6 +11,8 @@ dbfile = 'db/gps.sqlite3'
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
+
+rclient = redis.Redis()
 
 #
 # helpers
@@ -40,8 +43,9 @@ gpsdata = {
     'rmc': None
 }
 
-def live_commit(db):
+def live_update():
     global livedata
+    global gpsdata
 
     livedata = {
         'datetime': '%s %s' % (gpsdata['rmc']['date'], gpsdata['rmc']['time']),
@@ -57,35 +61,46 @@ def live_commit(db):
         'timestamp': gpsdata['rmc']['timestamp'],
     }
 
+    gpsdata['gga'] = None
+    gpsdata['vtg'] = None
+    gpsdata['rmc'] = None
+
+    rclient.publish('gps-live', json.dumps(livedata))
+
+def live_commit(db):
     # saving live data
     cursor = db.cursor()
     now = (livedata['datetime'], json.dumps(livedata),)
     cursor.execute("INSERT INTO datapoints (timepoint, payload) VALUES (?, ?)", now)
     db.commit()
 
-    gpsdata['gga'] = None
-    gpsdata['vtg'] = None
-    gpsdata['rmc'] = None
-
 def gps_push(data, db):
+    global gpsdata
+
     # validating data
-    if data['type'] == 'gga' and data['sats']:
+    if data['type'] == 'gga':
         gpsdata['gga'] = data
 
-    if data['type'] == 'vtg' and data['track']:
+    if data['type'] == 'vtg':
         gpsdata['vtg'] = data
 
-    if data['type'] == 'rmc' and data['coord']['lng']:
+    if data['type'] == 'rmc':
         gpsdata['rmc'] = data
 
     # commit new values
-    if gpsdata['gga'] and gpsdata['vtg'] and gpsdata['rmc']:
-        print("[+] we have enough data, commit")
+    if gpsdata['gga'] and gpsdata['gga']['sats'] and \
+       gpsdata['vtg'] and gpsdata['vtg']['track'] and \
+       gpsdata['rmc'] and gpsdata['rmc']['coord']['lng']:
+        print("[+] we have enough valid data, commit")
+
         try:
             live_commit(db)
 
         except Exception as e:
             print(e)
+
+def initialize():
+    rclient.publish('gps-live', json.dumps(livedata))
 
 #
 # page routing
@@ -145,6 +160,7 @@ def route_api_push_datapoint():
             print(e)
 
     db.commit()
+    live_update()
 
     return jsonreply(json.dumps({"status": "success"}))
 
@@ -196,6 +212,8 @@ def route_api_session(sessid):
         datapoints.append(json.loads(datapoint[0]))
 
     return jsonreply(json.dumps(datapoints))
+
+initialize()
 
 #
 # serving

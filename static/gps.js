@@ -52,9 +52,8 @@ function compute(data) {
 function live(data) {
     var output = {};
 
-    output['speed'] = data['speed'];
+    output = data;
     output['update'] = new Date(data['timestamp'] * 1000);
-    output['coord'] = data['coord'];
 
     return output;
 }
