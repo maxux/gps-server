@@ -54,13 +54,17 @@
 
         var signal = "Searching...";
         if(trip['quality'] == "GPS")
-            var signal = "Valid (" + trip['quality'] + ", Satellites: " + trip['sats'] + ", HDOP: " + trip['hdop'] + ")";
+            var signal = trip['quality'] + " (Satellites: " + trip['sats'] + ", HDOP: " + trip['hdop'] + ")";
 
         var livetitle = 'Live session';
-        if(trip['status'] == 'offline')
-            var livetitle = "Tracker offline, last data:";
+        var liveclass = 'text-success';
 
-        $('.live-title').html(livetitle);
+        if(trip['status'] == 'offline') {
+            var livetitle = "Tracker offline";
+            var liveclass = 'text-danger';
+        }
+
+        $('.live-title').attr('class', liveclass).html(livetitle);
         $('.trip-signal').html(signal);
         $('.trip-updated').html(trip['update']);
         $('.trip-now-speed').html(speedtext);
