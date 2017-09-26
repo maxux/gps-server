@@ -23,10 +23,12 @@ When running `gps-server.py`, you provides two main things:
 
 ## Pushing data
 
-### Sessions
 Basicly all of this is done by `gps-client`.
 
+### Sessions
+
 A **Session** is kind of data-time-slice representing a start and end date-time set.
+
 All points within this time-slice reprensent a « trip ».
 
 In database, we only save **begenin** of a session, the client is made **unreliable** and **stateless**,
@@ -70,9 +72,21 @@ As soon as the client send something, if data are valid, data are forwarded to w
 web-sockets. This is done by fillin a redis-queue with data. The `gps-live.py` takes care to handle web-sockets clients
 and forward data from redis-queue to web-clients.
 
-## Database
+# Database
 
 Even if the current engine is SQLite3, the database itself is not relational, data are stored like in a key-value store.
 
 You can't query the database on position/speed/etc. data are stored in JSON in a TEXT field. The database is here more
 for peristance, not for data management. This can maybe change in the future.
+
+# Installation and dependencies
+
+## Soon
+
+# Configuration
+
+## Soon
+
+# Demo
+
+![Screenshot](https://clea.maxux.net/screenshots/26-09-17-021935.png)
