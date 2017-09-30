@@ -69,7 +69,8 @@
         $('.trip-updated').html(trip['update']);
         $('.trip-now-speed').html(speedtext);
 
-        map.setCenter(trip['coord']);
+        if(trip['coord']['lat'])
+            map.setCenter(trip['coord']);
     }
 
     function connect() {
@@ -93,8 +94,8 @@
 
     function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 15,
-            center: {lat: 50.66, lng: 5.574},
+            zoom: 14,
+            center: {lat: 50.639827, lng: 5.568498},
             mapTypeId: 'terrain'
         });
 

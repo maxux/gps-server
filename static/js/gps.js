@@ -43,6 +43,9 @@ function compute(data) {
 
     // parsing trip
     for(var idx = 0; idx < data.length; idx += 2) {
+        if(!data[idx]['coord']['lat'] || !data[idx]['coord']['lng'])
+            continue;
+
         // insert values to full trip
         fullpath.push(data[idx]['coord']);
         fullpath.push(data[idx + 1]['coord']);

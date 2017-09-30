@@ -12,7 +12,7 @@ class GPSRawData:
 
     def _dmsdd(self, lat, latcard, lon, loncard):
         if not lat:
-            return {'lat': 0, 'lng': 0}
+            return {'lat': None, 'lng': None}
 
         xlat = {'d': int(lat[0:2]), 'ms': float(lat[2:])}
         xlon = {'d': int(lon[0:3]), 'ms': float(lon[3:])}
