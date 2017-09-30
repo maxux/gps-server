@@ -128,6 +128,78 @@ def initialize():
     rclient.publish('gps-live', json.dumps(livedata))
 
 #
+# management
+#
+def datapoints_scrub():
+    sessions = api_sessions()
+    deleted = []
+
+    for session in sessions:
+        datapoints = api_session(session['id'])
+        if len(datapoints) == 0:
+            deleted.append(session)
+            api_session_delete(session['id'])
+
+    return deleted
+
+#
+# api implementation
+#
+def api_sessions():
+    db = sqlite3.connect(config['db-file'])
+
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM sessions ORDER BY start DESC")
+
+    sessions = []
+    dbsessions = cursor.fetchall()
+    for session in dbsessions:
+        sessions.append({"id": session[0], "datetime": session[1]})
+
+    return sessions
+
+def api_session(sessid):
+    db = sqlite3.connect(config['db-file'])
+    cursor = db.cursor()
+
+    cursor.execute("SELECT start FROM sessions WHERE id = ? LIMIT 1", (sessid,))
+    dbsession = cursor.fetchall()
+
+    # session not found
+    if len(dbsession) == 0:
+        return jsonreply("[]")
+
+    sessionstart = dbsession[0][0]
+
+    # session bounds
+    cursor.execute("SELECT start FROM sessions WHERE id > ? LIMIT 1", (sessid,))
+    dbsession = cursor.fetchall()
+
+    # yeah, this is ugly
+    maxdate = '9999-01-01 00:00:00'
+    if len(dbsession) > 0:
+        maxdate = dbsession[0][0]
+
+    # fetching time-slice data
+    cursor.execute("SELECT payload FROM datapoints WHERE timepoint > ? AND timepoint < ?", (sessionstart, maxdate,))
+
+    datapoints = []
+    dbpoints = cursor.fetchall()
+    for datapoint in dbpoints:
+        datapoints.append(json.loads(datapoint[0]))
+
+    return datapoints
+
+def api_session_delete(sessid):
+    db = sqlite3.connect(config['db-file'])
+
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM sessions WHERE id = ?", (sessid,))
+    db.commit()
+
+    return True
+
+#
 # page routing
 #
 @app.route('/')
@@ -158,6 +230,13 @@ def route_api_ping():
 @app.route('/api/now')
 def route_api_now():
     return jsonreply(json.dumps(livedata))
+
+@app.route('/api/scrub')
+def route_api_scrub():
+    if request.headers.get('X-GPS-Auth') != config['password']:
+        abort(401)
+
+    return jsonreply(json.dumps(datapoints_scrub()))
 
 @app.route('/api/push/session', methods=['GET', 'POST'])
 def route_api_push_session():
@@ -201,58 +280,18 @@ def route_api_push_datapoint():
 
     db.commit()
 
-    if gpsdata['gga'] and gpsdata['vtg'] and gpsdata['rmc'] and \
-       gpsdata['rmc']['coord']['lng'] and gpsdata['rmc']['coord']['lat']:
+    if gpsdata['gga'] and gpsdata['vtg'] and gpsdata['rmc']:
         live_update()
 
     return jsonreply(json.dumps({"status": "success"}))
 
 @app.route('/api/sessions')
 def route_api_sessions():
-    db = sqlite3.connect(config['db-file'])
-
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM sessions ORDER BY start DESC")
-
-    sessions = []
-    dbsessions = cursor.fetchall()
-    for session in dbsessions:
-        sessions.append({"id": session[0], "datetime": session[1]})
-
-    return jsonreply(json.dumps(sessions))
+    return jsonreply(json.dumps(api_sessions()))
 
 @app.route('/api/session/<sessid>')
 def route_api_session(sessid):
-    db = sqlite3.connect(config['db-file'])
-    cursor = db.cursor()
-
-    cursor.execute("SELECT start FROM sessions WHERE id = ? LIMIT 1", (sessid,))
-    dbsession = cursor.fetchall()
-
-    # session not found
-    if len(dbsession) == 0:
-        return jsonreply("[]")
-
-    sessionstart = dbsession[0][0]
-
-    # session bounds
-    cursor.execute("SELECT start FROM sessions WHERE id > ? LIMIT 1", (sessid,))
-    dbsession = cursor.fetchall()
-
-    # yeah, this is ugly
-    maxdate = '9999-01-01 00:00:00'
-    if len(dbsession) > 0:
-        maxdate = dbsession[0][0]
-
-    # fetching time-slice data
-    cursor.execute("SELECT payload FROM datapoints WHERE timepoint > ? AND timepoint < ?", (sessionstart, maxdate,))
-
-    datapoints = []
-    dbpoints = cursor.fetchall()
-    for datapoint in dbpoints:
-        datapoints.append(json.loads(datapoint[0]))
-
-    return jsonreply(json.dumps(datapoints))
+    return jsonreply(json.dumps(api_session(sessid)))
 
 initialize()
 
