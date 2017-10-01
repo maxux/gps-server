@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="container home-container">
+        <h1 class="display-4">Sessions (full list)</h1>
+        <table id="sessions-list" class="table table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Departure</th>
+                    <th>Duration</th>
+                    <th>Distance</th>
+                    <th>Data Points</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+    function session_datapoint(data, datapoints) {
+        var trip = compute(datapoints);
+
+        var triptime = trip['totaltime'] + ' seconds';
+        if(trip['totaltime'] > 120)
+            triptime = (trip['totaltime'] / 60).toFixed(2) + ' minutes';
+
+        var text_datapoints = datapoints.length;
+        var text_distance = trip['length'].toFixed(0) + ' meters';
+        var text_triptime = triptime;
+
+        var tripstatus = 'text-success';
+        if(trip['totaltime'] < 120)
+            tripstatus = 'text-danger';
+
+        if(trip['length'] < 200)
+            tripstatus = 'text-danger';
+
+        $('#session-entry-' + data['id']).addClass(tripstatus);
+
+        $('#session-entry-' + data['id'] + ' td.datapoints').html(text_datapoints);
+        $('#session-entry-' + data['id'] + ' td.distance').html(text_distance);
+        $('#session-entry-' + data['id'] + ' td.duration').html(text_triptime);
+    }
+
+    function session_request(data) {
+        $.get('/api/session/' + data['id'], function(datapoints) {
+            session_datapoint(data, datapoints);
+        });
+    }
+
+    function sessions(data) {
+        for(var idx in data) {
+            var tr = $('<tr>', {'id': 'session-entry-' + data[idx]['id']});
+            var lnk = $('<a>', {'href': '/session/' + data[idx]['id']}).html('#' + data[idx]['id']);
+            tr.append($('<td>',).append(lnk));
+            tr.append($('<td>',).html(data[idx]['datetime']));
+            tr.append($('<td>', {'class': 'duration'}).html("..."));
+            tr.append($('<td>', {'class': 'distance'}).html("..."));
+            tr.append($('<td>', {'class': 'datapoints'}).html("..."));
+
+            $('#sessions-list tbody').append(tr);
+            session_request(data[idx]);
+        }
+    }
+
+    function initMap() {
+        $.get('/api/sessions', sessions);
+    }
+    </script>
+{% endblock %}

@@ -212,6 +212,11 @@ def route_sessions():
     data = {'CATEGORY': 'sessions'}
     return template("sessions.html", data)
 
+@app.route('/sessions-full')
+def route_sessions_full():
+    data = {'CATEGORY': 'sessions'}
+    return template("sessions-full.html", data)
+
 @app.route('/session/<sessid>')
 def route_session_id(sessid):
     data = {
