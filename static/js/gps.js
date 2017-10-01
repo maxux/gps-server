@@ -43,7 +43,12 @@ function compute(data) {
 
     // parsing trip
     for(var idx = 0; idx < data.length; idx += 2) {
+        // avoid missing position
         if(!data[idx]['coord']['lat'] || !data[idx]['coord']['lng'])
+            continue;
+
+        // avoid missing position (for second point of the segment)
+        if(!data[idx + 1]['coord']['lat'] || !data[idx + 1]['coord']['lng'])
             continue;
 
         // insert values to full trip
