@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
     <div class="container home-container">
-        <h1 class="display-4">Sessions (full list)</h1>
+        <h1 class="display-4">Sessions (datadump)</h1>
         <table id="sessions-list" class="table table-hover">
             <thead>
                 <tr>
@@ -10,6 +10,7 @@
                     <th>Duration</th>
                     <th>Distance</th>
                     <th>Data Points</th>
+                    <th>Management</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,6 +59,10 @@
             tr.append($('<td>', {'class': 'duration'}).html("..."));
             tr.append($('<td>', {'class': 'distance'}).html("..."));
             tr.append($('<td>', {'class': 'datapoints'}).html("..."));
+
+            var mgmtdel = $('<a>', {'href': '/api/management/delete/' + data[idx]['id']}).html("DEL");
+            var mgmttrunc = $('<a>', {'href': '/api/management/truncate/' + data[idx]['id']}).html("TNC");
+            tr.append($('<td>').append(mgmtdel).append(" ").append(mgmttrunc));
 
             $('#sessions-list tbody').append(tr);
             session_request(data[idx]);

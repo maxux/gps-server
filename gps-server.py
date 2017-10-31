@@ -298,6 +298,35 @@ def route_api_sessions():
 def route_api_session(sessid):
     return jsonreply(json.dumps(api_session(sessid)))
 
+@app.route('/api/management/delete/<sessid>')
+def route_api_mgmt_delete(sessid):
+    if request.headers.get('X-GPS-Auth') != config['password']:
+        abort(401)
+
+    api_session_delete(sessid)
+    return jsonreply(json.dumps({"status": "success"}))
+
+@app.route('/api/management/truncate/<sessid>')
+def route_api_mgmt_truncate(sessid):
+    if request.headers.get('X-GPS-Auth') != config['password']:
+        abort(401)
+
+    db = sqlite3.connect(config['db-file'])
+    cursor = db.cursor()
+
+    datapoints = api_session(sessid)
+
+    for datapoint in datapoints:
+        print("[+] removing: %s" % datapoint['datetime'])
+        now = (datapoint['datetime'],)
+        cursor.execute("DELETE FROM datapoints WHERE timepoint = ?", now)
+
+    cursor.execute("DELETE FROM sessions WHERE id = ?", (sessid,))
+    db.commit()
+
+    return jsonreply(json.dumps({"status": "success"}))
+
+
 initialize()
 
 #
