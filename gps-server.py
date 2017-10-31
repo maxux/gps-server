@@ -23,7 +23,7 @@ rclient = redis.Redis()
 # helpers
 #
 def jsonreply(contents):
-    response = make_response(contents)
+    response = make_response(contents + "\n")
     response.headers["Content-Type"] = "application/json"
 
     return response
@@ -79,7 +79,6 @@ def live_update():
     gpsdata['vtg'] = None
     gpsdata['rmc'] = None
 
-    rclient.publish('gps-live', json.dumps(livedata))
 
 def live_commit(db):
     try:
@@ -111,6 +110,7 @@ def gps_push(data, db):
        gpsdata['rmc'] and gpsdata['rmc']['coord']['lng'] and \
        gpsdata['rmc']['coord']['lat']:
         print("[+] we have enough valid data, commit")
+        live_update()
         live_commit(db)
 
 def initialize():
@@ -167,12 +167,12 @@ def api_session(sessid):
 
     # session not found
     if len(dbsession) == 0:
-        return jsonreply("[]")
+        return []
 
     sessionstart = dbsession[0][0]
 
     # session bounds
-    cursor.execute("SELECT start FROM sessions WHERE id > ? LIMIT 1", (sessid,))
+    cursor.execute("SELECT start FROM sessions WHERE start > ? LIMIT 1", (sessionstart,))
     dbsession = cursor.fetchall()
 
     # yeah, this is ugly
@@ -286,7 +286,7 @@ def route_api_push_datapoint():
     db.commit()
 
     if gpsdata['gga'] and gpsdata['vtg'] and gpsdata['rmc']:
-        live_update()
+        rclient.publish('gps-live', json.dumps(livedata))
 
     return jsonreply(json.dumps({"status": "success"}))
 
