@@ -47,14 +47,38 @@
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(chartloaded);
 
+    var map = null;
+
     var speed_data = null;
     var elevate_data = null;
     var sats_data = null;
     var speed_chart = null;
+    var points_data = null;
+    var select_marker = null;
+
+    function chartclick() {
+        var selectedItem = speed_chart.getSelection()[0];
+
+        if(!selectedItem)
+            return;
+
+        if(select_marker)
+            select_marker.setMap(null);
+
+        select_marker = new google.maps.Marker({
+            position: points_data[selectedItem.row][1],
+            map: map,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10
+              },
+            title: 'Chart Position'
+        });
+    }
 
     function tracker(data) {
         var bounds = new google.maps.LatLngBounds();
-        var map = new google.maps.Map(document.getElementById('map'), {
+        map = new google.maps.Map(document.getElementById('map'), {
             zoom: 13,
             center: {lat: 50.66, lng: 5.574},
             mapTypeId: 'terrain'
@@ -64,6 +88,7 @@
         speed_data = trip['speeds'];
         elevate_data = trip['elevate'];
         sats_data = trip['satsview'];
+        points_data = trip['points'];
 
         for(var entry in trip['segments']) {
             var segment = trip['segments'][entry];
@@ -146,11 +171,14 @@
             curveType: 'function',
             legend: { position: 'bottom' },
             vAxis: {viewWindow: {min: 0}},
+            trendlines: { 0: {} }
         };
 
-        var chart = new google.visualization.LineChart(document.getElementById('speed-chart'));
-        chart.draw(local_speed, options);
+        speed_chart = new google.visualization.LineChart(document.getElementById('speed-chart'));
+        google.visualization.events.addListener(speed_chart, 'select', chartclick);
+        speed_chart.draw(local_speed, options);
 
+        /*
         // Set chart options
         var options = {
             title: 'Trip Altitude',
@@ -172,6 +200,7 @@
         // Instantiate and draw our chart, passing in some options.
         var chart = new google.visualization.AreaChart(document.getElementById('sats-chart'));
         chart.draw(local_sats, options);
+        */
     }
 
     function initMap() {

@@ -19,15 +19,41 @@
     </div>
 
     <script>
+    var total_duration = 0;
+    var total_distance = 0;
+    var total_datapoints = 0;
+    var global_maxspeed = 0;
+
+    function total_update() {
+        var text_distance = (total_distance / 1000).toFixed(1) + ' km';
+        var text_duration = (total_duration / 3600).toFixed(1) + ' hours';
+        var text_maxspeed = global_maxspeed.toFixed(0) + ' km/h';
+
+        $('#session-entry-total td.datapoints').html(total_datapoints);
+        $('#session-entry-total td.distance').html(text_distance);
+        $('#session-entry-total td.duration').html(text_duration);
+        $('#session-entry-total td.maxspeed').html(text_maxspeed);
+    }
+
     function session_datapoint(data, datapoints) {
         var trip = compute(datapoints);
+
+        total_duration += trip['totaltime'];
+        total_distance += trip['length'];
+        total_datapoints += datapoints.length;
+
+        if(trip['speedmax'] > global_maxspeed)
+            global_maxspeed = trip['speedmax'];
 
         var triptime = trip['totaltime'] + ' seconds';
         if(trip['totaltime'] > 120)
             triptime = (trip['totaltime'] / 60).toFixed(2) + ' minutes';
 
-        var text_datapoints = datapoints.length;
         var text_distance = trip['length'].toFixed(0) + ' meters';
+        if(trip['length'] > 1200)
+            text_distance = (trip['length'] / 1000).toFixed(2) + ' km';
+
+        var text_datapoints = datapoints.length;
         var text_triptime = triptime;
 
         var tripstatus = 'text-success';
@@ -42,6 +68,8 @@
         $('#session-entry-' + data['id'] + ' td.datapoints').html(text_datapoints);
         $('#session-entry-' + data['id'] + ' td.distance').html(text_distance);
         $('#session-entry-' + data['id'] + ' td.duration').html(text_triptime);
+
+        total_update();
     }
 
     function session_request(data) {
@@ -67,6 +95,16 @@
             $('#sessions-list tbody').append(tr);
             session_request(data[idx]);
         }
+
+        var tr = $('<tr>', {'id': 'session-entry-total'});
+        tr.append($('<td>',).html(""));
+        tr.append($('<td>',).html("Total"));
+        tr.append($('<td>', {'class': 'duration'}).html("..."));
+        tr.append($('<td>', {'class': 'distance'}).html("..."));
+        tr.append($('<td>', {'class': 'datapoints'}).html("..."));
+        tr.append($('<td>', {'class': 'maxspeed'}).html("..."));
+
+        $('#sessions-list tbody').append(tr);
     }
 
     function initMap() {

@@ -25,6 +25,7 @@ function compute(data) {
     var fullpath = [];
 
     output['segments'] = [];
+    output['points']   = [];
     output['speeds']   = [];
     output['elevate']  = [];
     output['satsview'] = [];
@@ -58,10 +59,11 @@ function compute(data) {
         // create a new segment
         output['segments'].push([data[idx]['coord'], data[idx + 1]['coord']]);
 
-        // computing speed
+        // computing relative data
         var time = data[idx]['datetime'].substr(11, 8);
-        output['speeds'].push([time, data[idx]['speed']]);
-        output['elevate'].push([time, data[idx]['altitude']]);
+        output['speeds'].push([time, parseInt(data[idx]['speed'])]);
+        output['points'].push([time, data[idx]['coord']]);
+        output['elevate'].push([time, parseInt(data[idx]['altitude'])]);
         output['satsview'].push([time, data[idx]['sats']]);
 
         output['speedavg'] += data[idx]['speed'];
