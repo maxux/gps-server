@@ -79,6 +79,9 @@ def live_commit(db):
 def gps_push(data, db):
     global gpsdata
 
+    if data['type'] == 'unknown' or data['type'] == 'bad checksum':
+        return 0
+
     # validating data
     if data['type'] == 'gga':
         gpsdata['gga'] = data

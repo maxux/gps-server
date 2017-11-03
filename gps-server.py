@@ -75,6 +75,9 @@ def live_update():
         'timestamp': gpsdata['rmc']['timestamp'],
     }
 
+    # notify live update
+    rclient.publish('gps-live', json.dumps(livedata))
+
     gpsdata['gga'] = None
     gpsdata['vtg'] = None
     gpsdata['rmc'] = None
@@ -263,6 +266,8 @@ def route_api_push_session():
 
 @app.route('/api/push/datapoint', methods=['POST'])
 def route_api_push_datapoint():
+    global gpsdata
+
     if request.headers.get('X-GPS-Auth') != config['password']:
         abort(401)
 
@@ -284,9 +289,6 @@ def route_api_push_datapoint():
             print(e)
 
     db.commit()
-
-    if gpsdata['gga'] and gpsdata['vtg'] and gpsdata['rmc']:
-        rclient.publish('gps-live', json.dumps(livedata))
 
     return jsonreply(json.dumps({"status": "success"}))
 
