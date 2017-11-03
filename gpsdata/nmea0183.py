@@ -4,6 +4,20 @@ from datetime import datetime
 from datetime import timezone
 
 class GPSRawData:
+    def checksum(self, line):
+        # malformed line
+        if not line.startswith('$') or line[-3] != '*':
+            return False
+
+        control = int("0x%s" % line[-2:], 16)
+        compare = line[1:-3]
+        compute = 0
+
+        for entry in compare:
+            compute ^= ord(entry)
+
+        return (control == compute)
+
     def _time(self, tf):
         return "%s:%s:%s" % (tf[0:2], tf[2:4], tf[4:6])
 
@@ -105,9 +119,8 @@ class GPSData:
         self.raw = GPSRawData()
 
     def parse(self, line):
-        # malformed line (no checksum at the end)
-        if line[-3:-2] != "*":
-            return {'type': 'unknown'}
+        if not self.raw.checksum(line):
+            return {'type': 'bad checksum'}
 
         fields = line.split(',')
         action = fields[0]
