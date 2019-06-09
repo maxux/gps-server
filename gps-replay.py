@@ -102,6 +102,47 @@ def gps_push(data, db):
 
     return 0
 
+def gps_session(db, data):
+    dtfound = "%s %s" % (data['date'], data['time'])
+
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM sessions WHERE start > datetime(?, '-10 minutes') AND start < datetime(?, '+10 minutes')", (dtfound, dtfound,))
+    exists = cursor.fetchall()
+
+    if len(exists) > 0:
+        print("[+] session found")
+        return
+
+    print("[-] session not found, creating new session")
+    cursor.execute("INSERT INTO sessions (start) VALUES (datetime(?))", (dtfound,))
+    db.commit()
+
+def gps_lookup(gps, lines):
+    print("[+] looking for first valid frame")
+    validity = False
+
+    for line in lines:
+        try:
+            data = gps.parse(line)
+            if data['type'] == "rmc":
+                if data['validity']:
+                    validity = True
+                    break
+
+        except Exception as e:
+            print("[-] %s" % e)
+
+    if not validity:
+        print("[-] could not find any valid interresting frame")
+        return None
+
+    dtfound = "%s %s" % (data['date'], data['time'])
+    print("[+] first valid frame found, datetime: %s" % dtfound)
+    print("[+] looking for existing session")
+
+    return data
+
+
 def initialize(filename):
     print("[+] replaying: %s" % filename)
 
@@ -114,9 +155,17 @@ def initialize(filename):
     with open(filename, 'rb') as f:
         contents = f.read()
 
-    status("[+] replaying: ")
-
     lines = contents.decode('utf-8', 'ignore').strip().split("\n")
+
+    data = gps_lookup(gps, lines)
+    if data == None:
+        # no valid frame found, skipping
+        return
+
+    # ensure session exists
+    gps_session(db, data)
+
+    status("[+] replaying: ")
 
     for line in lines:
         try:
@@ -136,6 +185,15 @@ def initialize(filename):
     print("[+] replayed frames: %d" % parsed)
     print("[+] missing frames: %d" % commit)
 
+    db.close()
 
-for file in os.listdir("/tmp/gps-data"):
-    initialize("/tmp/gps-data/%s" % file)
+if len(sys.argv) < 2:
+    print("[-] missing root datapoint directory")
+    sys.exit(1)
+
+rootpath = sys.argv[1]
+
+print("[+] root datapoint: %s" % rootpath)
+
+for file in os.listdir(rootpath):
+    initialize("%s/%s" % (rootpath, file))
