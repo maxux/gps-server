@@ -63,13 +63,15 @@ class GPSRawData:
         timestamp = dt.replace(tzinfo=timezone.utc).timestamp()
 
         coord = self._dmsdd(fields[3], fields[4], fields[5], fields[6])
+        warning = fields[2] == "A"
 
         return {
             'type': 'rmc',
             'timestamp': int(timestamp),
             'time': time,
             'date': date,
-            'coord': coord
+            'coord': coord,
+            'validity': (fields[2] == "A"),
         }
 
     # GPS Satellites in view
@@ -84,7 +86,7 @@ class GPSRawData:
             'speed': float(fields[7])
         }
 
-        if data['speed'] > 200:
+        if data['speed'] > 260:
             data['speed'] = 0
 
         return data
