@@ -2,18 +2,36 @@
 {% block content %}
     <div class="container home-container">
         <h1 class="display-4">Sessions</h1>
-        <ul id="sessions-list">
-        </ul>
+        <table id="sessions-list" class="table table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Departure</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
     </div>
 
     <script>
     function sessions(data) {
-        for(var idx in data) {
-            var entry = data[idx];
-            var text = 'Session #' + entry['id'] + ': ' + entry['datetime'] + ' (UTC)';
-            var lnk = $('<a>', {'href': '/session/' + entry['id']}).html(text);
+        var current = 0;
 
-            $('#sessions-list').append($('<li>').append(lnk));
+        for(var idx in data) {
+            if(current++ > 30)
+                return;
+
+            var entry = data[idx];
+            
+            var lnk = $('<a>', {'href': '/session/' + entry['id']}).html('#' + entry['id']);
+            
+            var tr = $('<tr>');
+            tr.append($('<td>').append(lnk));
+            tr.append($('<td>').html(entry['datetime'] + ' (UTC)'));
+
+            $('#sessions-list tbody').append(tr);
         }
     }
 

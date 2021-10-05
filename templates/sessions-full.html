@@ -10,7 +10,8 @@
                     <th>Duration</th>
                     <th>Distance</th>
                     <th>Data Points</th>
-                    <th>Management</th>
+                    <th>Avg. Speed</th>
+                    <th>Max. Speed</th>
                 </tr>
             </thead>
             <tbody>
@@ -68,6 +69,8 @@
         $('#session-entry-' + data['id'] + ' td.datapoints').html(text_datapoints);
         $('#session-entry-' + data['id'] + ' td.distance').html(text_distance);
         $('#session-entry-' + data['id'] + ' td.duration').html(text_triptime);
+        $('#session-entry-' + data['id'] + ' td.avg-speed').html(trip['speedavg'].toFixed(0) + ' km/h');
+        $('#session-entry-' + data['id'] + ' td.max-speed').html(trip['speedmax'].toFixed(0) + ' km/h');
 
         total_update();
     }
@@ -88,9 +91,11 @@
             tr.append($('<td>', {'class': 'distance'}).html("..."));
             tr.append($('<td>', {'class': 'datapoints'}).html("..."));
 
-            var mgmtdel = $('<a>', {'href': '/api/management/delete/' + data[idx]['id']}).html("DEL");
-            var mgmttrunc = $('<a>', {'href': '/api/management/truncate/' + data[idx]['id']}).html("TNC");
-            tr.append($('<td>').append(mgmtdel).append(" ").append(mgmttrunc));
+            // var mgmtdel = $('<a>', {'href': '/api/management/delete/' + data[idx]['id']}).html("DEL");
+            // var mgmttrunc = $('<a>', {'href': '/api/management/truncate/' + data[idx]['id']}).html("TNC");
+            // tr.append($('<td>').append(mgmtdel).append(" ").append(mgmttrunc));
+            tr.append($('<td>', {'class': 'avg-speed'}).html("..."));
+            tr.append($('<td>', {'class': 'max-speed'}).html("..."));
 
             $('#sessions-list tbody').append(tr);
             session_request(data[idx]);

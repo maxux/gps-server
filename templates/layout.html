@@ -29,7 +29,16 @@
             <a class="nav-link" href="/">Live</a>
           </li>
           <li class="nav-item{% if CATEGORY == 'sessions' %} active{% endif %}">
-            <a class="nav-link" href="/sessions">Sessions</a>
+            <a class="nav-link" href="/sessions">Recent sessions</a>
+          </li>
+          <li class="nav-item{% if CATEGORY == 'light' %} active{% endif %}">
+            <a class="nav-link" href="/sessions-light">Advanced view (light)</a>
+          </li>
+          <li class="nav-item{% if CATEGORY == 'full' %} active{% endif %}">
+            <a class="nav-link" href="/sessions-full">Advanced view</a>
+          </li>
+          <li class="nav-item{% if CATEGORY == 'coverage' %} active{% endif %}">
+            <a class="nav-link" href="/coverage">Map coverage (beta)</a>
           </li>
         </ul>
       </div>

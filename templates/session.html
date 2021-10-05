@@ -38,8 +38,9 @@
         <div id="map"></div>
 
         <div id="speed-chart" class="chart"></div>
-        <div id="elevate-chart" class="chart"></div>
-        <div id="sats-chart" class="chart"></div>
+        <div id="speed-elevate-chart" class="chart"></div>
+        <!-- <div id="elevate-chart" class="chart"></div>
+        <div id="sats-chart" class="chart"></div> -->
     </div>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
@@ -53,6 +54,7 @@
     var elevate_data = null;
     var sats_data = null;
     var speed_chart = null;
+    var elevate_chart = null;
     var points_data = null;
     var select_marker = null;
 
@@ -127,10 +129,10 @@
         if(trip['length'] > 1200)
             triplength = ((trip['length'] / 1000).toFixed(2)) + ' km';
 
-        var avgauto = trip['speedavg'].toFixed(2)
+        var avgauto = trip['speedavg'].toFixed(0)
         var avgautotext = avgauto + ' km/h';
 
-        var avgtime = ((trip['length'] / trip['totaltime']) * 3.6).toFixed(2);
+        var avgtime = ((trip['length'] / trip['totaltime']) * 3.6).toFixed(0);
         var avgtimetext = avgtime + ' km/h';
 
         $('.trip-departure').html(trip['departure']);
@@ -138,7 +140,7 @@
         $('.trip-time').html(triptime);
         $('.trip-distance').html(triplength);
         $('.trip-avg-speed').html(avgautotext + ' [' + avgtimetext + ']');
-        $('.trip-max-speed').html(trip['speedmax'].toFixed(2) + ' km/h');
+        $('.trip-max-speed').html(trip['speedmax'].toFixed(0) + ' km/h');
 
         // try to draw chart if everything is ready
         chartable();
@@ -167,29 +169,37 @@
 
         // Set chart options
         var options = {
-            title: 'Trip speed',
+            title: 'Trip Summary',
             curveType: 'function',
             legend: { position: 'bottom' },
             vAxis: {viewWindow: {min: 0}},
-            trendlines: { 0: {} }
+            trendlines: { 0: {} },
+            series: {
+                0: {axis: 'Speed'},
+                1: {axis: 'Altitude', targetAxisIndex: 1, areaOpacity: 0.4}
+            },
+            axes: {
+                y: {
+                    Speed: {label: 'Speed'},
+                    Altitude: {label: 'Altitude'}
+                }
+            },
         };
 
-        speed_chart = new google.visualization.LineChart(document.getElementById('speed-chart'));
+        var combined_elevate = google.visualization.data.join(local_speed, local_elevate, 'full', [[0, 0]], [1], [1]);
+        var combined_speed = local_speed
+
+        speed_chart = new google.visualization.AreaChart(document.getElementById('speed-chart'));
         google.visualization.events.addListener(speed_chart, 'select', chartclick);
-        speed_chart.draw(local_speed, options);
+        speed_chart.draw(combined_speed, options);
+
+        elevate_chart = new google.visualization.AreaChart(document.getElementById('speed-elevate-chart'));
+        google.visualization.events.addListener(elevate_chart, 'select', chartclick);
+        elevate_chart.draw(combined_elevate, options);
+
+
 
         /*
-        // Set chart options
-        var options = {
-            title: 'Trip Altitude',
-            curveType: 'function',
-            legend: { position: 'bottom' },
-        };
-
-        // Instantiate and draw our chart, passing in some options.
-        var chart = new google.visualization.LineChart(document.getElementById('elevate-chart'));
-        chart.draw(local_elevate, options);
-
         // Set chart options
         var options = {
             title: 'Satellites in view',

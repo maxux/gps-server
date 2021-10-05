@@ -4,6 +4,7 @@ import json
 import sqlite3
 import redis
 from gpsdata.nmea0183 import *
+from gpsdata.custom import GPSDataNew
 from flask import Flask, request, redirect, url_for, render_template, abort, make_response, send_from_directory
 from werkzeug.wrappers import Request
 
@@ -52,6 +53,7 @@ livedata = {
 }
 
 gpsdata = {
+    'custom': None,
     'gga': None,
     'vtg': None,
     'rmc': None
@@ -61,6 +63,30 @@ def live_update():
     global livedata
     global gpsdata
 
+    print("live update")
+    print(gpsdata)
+
+    livedata = {
+        'datetime': '%s %s' % (gpsdata['custom']['date'], gpsdata['custom']['time']),
+        'coord': {
+            'lat': gpsdata['custom']['lat'],
+            'lng': gpsdata['custom']['lng'],
+        },
+        'speed': gpsdata['custom']['speed'] * 3.6, # m/s -> km/h
+        'quality': gpsdata['custom']['acc'],
+        'sats': 0, # gpsdata['custom']['sats'],
+        'hdop': gpsdata['custom']['acc'],
+        'altitude': gpsdata['custom']['alt'],
+        'timestamp': gpsdata['custom']['ts'],
+    }
+
+    if livedata['speed'] < 0:
+        livedata['speed'] = 0
+
+    print("data created")
+    print(livedata)
+
+    """
     livedata = {
         'datetime': '%s %s' % (gpsdata['rmc']['date'], gpsdata['rmc']['time']),
         'coord': {
@@ -74,13 +100,16 @@ def live_update():
         'altitude': gpsdata['gga']['altitude'],
         'timestamp': gpsdata['rmc']['timestamp'],
     }
+    """
 
     # notify live update
     rclient.publish('gps-live', json.dumps(livedata))
 
+    """
     gpsdata['gga'] = None
     gpsdata['vtg'] = None
     gpsdata['rmc'] = None
+    """
 
 
 def live_commit(db):
@@ -97,6 +126,12 @@ def live_commit(db):
 def gps_push(data, db):
     global gpsdata
 
+    print("PUSH")
+    print(data)
+
+    gpsdata["custom"] = data
+
+    """
     # validating data
     if data['type'] == 'gga':
         gpsdata['gga'] = data
@@ -115,6 +150,10 @@ def gps_push(data, db):
         print("[+] we have enough valid data, commit")
         live_update()
         live_commit(db)
+    """
+
+    live_update()
+    live_commit(db)
 
 def initialize():
     global livedata
@@ -215,10 +254,21 @@ def route_sessions():
     data = {'CATEGORY': 'sessions'}
     return template("sessions.html", data)
 
+@app.route('/coverage')
+def route_coverage():
+    data = {'CATEGORY': 'coverage'}
+    return template("coverage.html", data)
+
+
 @app.route('/sessions-full')
 def route_sessions_full():
-    data = {'CATEGORY': 'sessions'}
+    data = {'CATEGORY': 'full'}
     return template("sessions-full.html", data)
+
+@app.route('/sessions-light')
+def route_sessions_light():
+    data = {'CATEGORY': 'light'}
+    return template("sessions-light.html", data)
 
 @app.route('/session/<sessid>')
 def route_session_id(sessid):
@@ -256,7 +306,7 @@ def route_api_push_session():
     try:
         cursor = db.cursor()
         now = (int(time.time()),)
-        cursor.execute("INSERT INTO sessions (start) VALUES (datetime(?, 'unixepoch'))", now)
+        cursor.execute("INSERT INTO sessions (start) VALUES (datetime(?, 'unixepoch', 'localtime'))", now)
         db.commit()
 
     except Exception as e:
@@ -272,7 +322,7 @@ def route_api_push_datapoint():
         abort(401)
 
     db = sqlite3.connect(config['db-file'])
-    gps = GPSData()
+    gps = GPSDataNew()
 
     lines = request.data.decode('utf-8').strip().split("\n")
     for line in lines:
