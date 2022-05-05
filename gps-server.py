@@ -66,6 +66,7 @@ def live_update():
     print("live update")
     print(gpsdata)
 
+    """
     livedata = {
         'datetime': '%s %s' % (gpsdata['custom']['date'], gpsdata['custom']['time']),
         'coord': {
@@ -79,6 +80,22 @@ def live_update():
         'altitude': gpsdata['custom']['alt'],
         'timestamp': gpsdata['custom']['ts'],
     }
+    """
+
+    livedata = {
+        'datetime': '%s %s' % (gpsdata['rmc']['date'], gpsdata['rmc']['time']),
+        'coord': {
+            'lat': gpsdata['rmc']['coord']['lat'],
+            'lng': gpsdata['rmc']['coord']['lng'],
+        },
+        'speed': gpsdata['rmc']['speed'], # gpsdata['vtg']['speed'],
+        'quality': gpsdata['gga']['quality'],
+        'sats': gpsdata['gga']['sats'],
+        'hdop': gpsdata['gga']['hdop'],
+        'altitude': gpsdata['gga']['altitude'],
+        'timestamp': gpsdata['rmc']['timestamp'],
+    }
+
 
     if livedata['speed'] < 0:
         livedata['speed'] = 0
@@ -86,30 +103,12 @@ def live_update():
     print("data created")
     print(livedata)
 
-    """
-    livedata = {
-        'datetime': '%s %s' % (gpsdata['rmc']['date'], gpsdata['rmc']['time']),
-        'coord': {
-            'lat': gpsdata['rmc']['coord']['lat'],
-            'lng': gpsdata['rmc']['coord']['lng'],
-        },
-        'speed': gpsdata['vtg']['speed'],
-        'quality': gpsdata['gga']['quality'],
-        'sats': gpsdata['gga']['sats'],
-        'hdop': gpsdata['gga']['hdop'],
-        'altitude': gpsdata['gga']['altitude'],
-        'timestamp': gpsdata['rmc']['timestamp'],
-    }
-    """
-
     # notify live update
     rclient.publish('gps-live', json.dumps(livedata))
 
-    """
     gpsdata['gga'] = None
     gpsdata['vtg'] = None
     gpsdata['rmc'] = None
-    """
 
 
 def live_commit(db):
@@ -129,9 +128,10 @@ def gps_push(data, db):
     print("PUSH")
     print(data)
 
-    gpsdata["custom"] = data
-
     """
+    gpsdata["custom"] = data
+    """
+
     # validating data
     if data['type'] == 'gga':
         gpsdata['gga'] = data
@@ -144,16 +144,16 @@ def gps_push(data, db):
 
     # commit new values
     if gpsdata['gga'] and gpsdata['gga']['sats'] and \
-       gpsdata['vtg'] and gpsdata['vtg']['track'] and \
        gpsdata['rmc'] and gpsdata['rmc']['coord']['lng'] and \
        gpsdata['rmc']['coord']['lat']:
         print("[+] we have enough valid data, commit")
         live_update()
         live_commit(db)
-    """
 
-    live_update()
-    live_commit(db)
+    # gpsdata['vtg'] and gpsdata['vtg']['track'] and \
+
+    # live_update()
+    # live_commit(db)
 
 def initialize():
     global livedata
@@ -322,7 +322,8 @@ def route_api_push_datapoint():
         abort(401)
 
     db = sqlite3.connect(config['db-file'])
-    gps = GPSDataNew()
+    # gps = GPSDataNew()
+    gps = GPSData()
 
     lines = request.data.decode('utf-8').strip().split("\n")
     for line in lines:

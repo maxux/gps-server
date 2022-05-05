@@ -65,12 +65,16 @@ class GPSRawData:
         coord = self._dmsdd(fields[3], fields[4], fields[5], fields[6])
         warning = fields[2] == "A"
 
+        # knots to kph
+        speed = float(fields[7]) * 1.852
+
         return {
             'type': 'rmc',
             'timestamp': int(timestamp),
             'time': time,
             'date': date,
             'coord': coord,
+            'speed': speed,
             'validity': (fields[2] == "A"),
         }
 
@@ -121,6 +125,8 @@ class GPSData:
         self.raw = GPSRawData()
 
     def parse(self, line):
+        print(line)
+
         if not self.raw.checksum(line):
             return {'type': 'bad checksum'}
 
