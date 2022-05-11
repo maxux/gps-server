@@ -99,9 +99,9 @@
             bounds.extend(segment[0]);
 
             // compute color of the segment
-            var speedpc = ((trip['speeds'][entry][1] / 90) * 100);
-            if(speedpc > 100)
-                speedpc = 100;
+            var speedpc = ((trip['speeds'][entry][1] / 130) * 100);
+            if(speedpc > 130)
+                speedpc = 130;
 
             var temp = (100 - speedpc) / 100;
             var color = (temp * 180).toFixed(0);
