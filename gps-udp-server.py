@@ -14,18 +14,20 @@ print("[+] waiting udp packets")
 while(True):
     bytesAddressPair = UDPServerSocket.recvfrom(buflen)
 
-    message = bytesAddressPair[0].decode('utf-8').split("\r\n")
-    address = bytesAddressPair[1]
+    try:
+        message = bytesAddressPair[0].decode('utf-8').split("\r\n")
+        address = bytesAddressPair[1]
 
-    payload = "\n".join(message[0:-1])
-    headers = {"X-GPS-Auth": config['password']}
+        payload = "\n".join(message[0:-1])
+        headers = {"X-GPS-Auth": config['password']}
 
-    print("%s: %s" % (address, message))
+        print("%s: %s" % (address, message))
 
-    if message[0] == "NEW SESSION":
-        requests.get("http://gps.maxux.net/api/push/session", headers=headers)
-        continue
+        if message[0] == "NEW SESSION":
+            requests.get("http://gps.maxux.net/api/push/session", headers=headers)
+            continue
 
-    headers = {"X-GPS-Auth": "mx42"}
-    requests.post("http://gps.maxux.net/api/push/datapoint", headers=headers, data=payload)
+        requests.post("http://gps.maxux.net/api/push/datapoint", headers=headers, data=payload)
 
+    except Exception as e:
+        print(e)
