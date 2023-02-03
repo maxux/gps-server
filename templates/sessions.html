@@ -24,12 +24,12 @@
                 return;
 
             var entry = data[idx];
-            
+
             var lnk = $('<a>', {'href': '/session/' + entry['id']}).html('#' + entry['id']);
-            
+
             var tr = $('<tr>');
             tr.append($('<td>').append(lnk));
-            tr.append($('<td>').html(entry['datetime'] + ' (UTC)'));
+            tr.append($('<td>').html(entry['datetime']));
 
             $('#sessions-list tbody').append(tr);
         }

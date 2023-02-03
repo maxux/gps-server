@@ -66,7 +66,6 @@ def live_update():
     print("live update")
     print(gpsdata)
 
-    """
     livedata = {
         'datetime': '%s %s' % (gpsdata['custom']['date'], gpsdata['custom']['time']),
         'coord': {
@@ -80,8 +79,8 @@ def live_update():
         'altitude': gpsdata['custom']['alt'],
         'timestamp': gpsdata['custom']['ts'],
     }
-    """
 
+    """
     livedata = {
         'datetime': '%s %s' % (gpsdata['rmc']['date'], gpsdata['rmc']['time']),
         'coord': {
@@ -95,7 +94,7 @@ def live_update():
         'altitude': gpsdata['gga']['altitude'],
         'timestamp': gpsdata['rmc']['timestamp'],
     }
-
+    """
 
     if livedata['speed'] < 0:
         livedata['speed'] = 0
@@ -128,10 +127,9 @@ def gps_push(data, db):
     print("PUSH")
     print(data)
 
-    """
     gpsdata["custom"] = data
-    """
 
+    """
     # validating data
     if data['type'] == 'gga':
         gpsdata['gga'] = data
@@ -151,9 +149,10 @@ def gps_push(data, db):
         live_commit(db)
 
     # gpsdata['vtg'] and gpsdata['vtg']['track'] and \
+    """
 
-    # live_update()
-    # live_commit(db)
+    live_update()
+    live_commit(db)
 
 def initialize():
     global livedata
@@ -191,7 +190,7 @@ def api_sessions():
     db = sqlite3.connect(config['db-file'])
 
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM sessions ORDER BY start DESC")
+    cursor.execute("SELECT id, start FROM sessions ORDER BY start DESC")
 
     sessions = []
     dbsessions = cursor.fetchall()
@@ -307,6 +306,7 @@ def route_api_push_session():
         cursor = db.cursor()
         now = (int(time.time()),)
         cursor.execute("INSERT INTO sessions (start) VALUES (datetime(?, 'unixepoch', 'localtime'))", now)
+        # cursor.execute("INSERT INTO sessions (start) VALUES (datetime(?, 'unixepoch'))", now)
         db.commit()
 
     except Exception as e:
@@ -322,8 +322,8 @@ def route_api_push_datapoint():
         abort(401)
 
     db = sqlite3.connect(config['db-file'])
-    # gps = GPSDataNew()
-    gps = GPSData()
+    gps = GPSDataNew()
+    # gps = GPSData()
 
     lines = request.data.decode('utf-8').strip().split("\n")
     for line in lines:
